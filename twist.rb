@@ -26,8 +26,18 @@ EM.run do
   twitter_client.each do |result|
     result = JSON.parse(result)
     user = result['user']
-    unless track_keywords.include?(user['screen_name'])
-      status_url = "https://twitter.com/#{user['screen_name']}/status/#{result['id']}"
+    status_url = "https://twitter.com/#{user['screen_name']}/status/#{result['id']}"
+    if result['retweeted_status']
+      rt = result['retweeted_status']
+      if rt['text'] != result['text']
+        hipchat_client[ENV['HIPCHAT_ROOM_NAME']].send(ENV['HIPCHAT_SENDER_NAME'], status_url, message_format: 'text', color: 'gray')
+      end
+      if rt['retweet_count'] % 5 == 0
+        hipchat_client[ENV['HIPCHAT_ROOM_NAME']].send('RT', <<"EOT", message_format: 'html', color: 'yellow')
+<b>#{result['retweeted_status']['retweet_count']} retweets</b>: #{rt['text'].length > 30 ? rt['text'].slice(0,30) + '...' : rt['text']} - @<a href="#{status_url}">#{rt['user']['screen_name']}</a>
+EOT
+      end
+    else
       hipchat_client[ENV['HIPCHAT_ROOM_NAME']].send(ENV['HIPCHAT_SENDER_NAME'], status_url, message_format: 'text', color: 'gray')
     end
   end
