@@ -2,7 +2,7 @@ require 'rubygems'
 require 'bundler'
 require 'em-twitter'
 require 'json'
-require 'hipchat'
+require 'slack-notifier'
 
 Bundler.require
 
@@ -21,23 +21,23 @@ options = {
 
 EM.run do
   twitter_client = EM::Twitter::Client.connect(options)
-  hipchat_client = HipChat::Client.new(ENV['HIPCHAT_API_TOKEN'])
+  slack_notifier = Slack::Notifier.new ENV['SLACK_TEAM'], ENV['SLACK_TOKEN'],
+    icon_url: ENV['SLACK_ICON_URL'], channel: ENV['SLACK_ROOM_NAME']
   twitter_client.each do |result|
     result = JSON.parse(result)
     user = result['user']
     status_url = "https://twitter.com/#{user['screen_name']}/status/#{result['id']}"
     if result['retweeted_status']
       if result['in_reply_to_status_id']
-        hipchat_client[ENV['HIPCHAT_ROOM_NAME']].send('Twitter RT', status_url, message_format: 'text', color: 'gray')
+        slack_notifier.ping status_url, username: ENV['SLACK_RT_SENDER_NAME'] 
       end
       rt = result['retweeted_status']
       if rt['retweet_count'] % 5 == 0
-        hipchat_client[ENV['HIPCHAT_ROOM_NAME']].send('Twitter RT', <<"EOT", message_format: 'html', color: 'yellow')
-<b>#{result['retweeted_status']['retweet_count']} retweets</b>: #{rt['text'].length > 30 ? rt['text'].slice(0,30) + '...' : rt['text']} - @<a href="#{status_url}">#{rt['user']['screen_name']}</a>
-EOT
+        text = "#{result['retweeted_status']['retweet_count']} retweets: #{rt['text'].length > 30 ? rt['text'].slice(0,30) + '...' : rt['text']} - @<#{status_url}|#{rt['user']['screen_name']}>"
+        slack_notifier.ping text, username: ENV['SLACK_RT_SENDER_NAME'] 
       end
     else
-      hipchat_client[ENV['HIPCHAT_ROOM_NAME']].send(ENV['HIPCHAT_SENDER_NAME'], status_url, message_format: 'text', color: 'gray')
+      slack_notifier.ping status_url, username: ENV['SLACK_SENDER_NAME']
     end
   end
 end
