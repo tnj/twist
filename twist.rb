@@ -25,7 +25,7 @@ EM.run do
     icon_url: ENV['SLACK_ICON_URL'], channel: ENV['SLACK_ROOM_NAME'], username: ENV['SLACK_SENDER_NAME']
 
   $stdout.sync = true
-  puts "Notifier started"
+  puts "Notifier started, will notify to #{ENV['SLACK_ROOM_NAME']} on #{ENV['SLACK_TEAM']}"
   slack_notifier.ping "Notifier started"
 
   twitter_client.each do |result|
