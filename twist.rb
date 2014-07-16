@@ -32,7 +32,6 @@ EM.run do
     result = JSON.parse(result)
     user = result['user']
     status_url = "https://twitter.com/#{user['screen_name']}/status/#{result['id']}"
-    puts "Got tweet: #{status_url}"
     if result['retweeted_status']
       if result['in_reply_to_status_id']
         slack_notifier.ping status_url, username: ENV['SLACK_RT_SENDER_NAME'] 
