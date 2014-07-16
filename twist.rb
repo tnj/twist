@@ -19,12 +19,15 @@ options = {
   }
 }
 
-$stdout.sync = true
-
 EM.run do
   twitter_client = EM::Twitter::Client.connect(options)
   slack_notifier = Slack::Notifier.new ENV['SLACK_TEAM'], ENV['SLACK_TOKEN'],
-    icon_url: ENV['SLACK_ICON_URL'], channel: ENV['SLACK_ROOM_NAME']
+    icon_url: ENV['SLACK_ICON_URL'], channel: ENV['SLACK_ROOM_NAME'], username: ENV['SLACK_SENDER_NAME']
+
+  $stdout.sync = true
+  puts "Notifier started"
+  slack_notifier.ping "Notifier started"
+
   twitter_client.each do |result|
     result = JSON.parse(result)
     user = result['user']
@@ -40,7 +43,7 @@ EM.run do
         slack_notifier.ping text, username: ENV['SLACK_RT_SENDER_NAME'] 
       end
     else
-      slack_notifier.ping status_url, username: ENV['SLACK_SENDER_NAME']
+      slack_notifier.ping status_url
     end
   end
 end
