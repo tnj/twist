@@ -42,7 +42,7 @@ EM.run do
         slack_notifier.ping text, username: ENV['SLACK_RT_SENDER_NAME'] 
       end
     else
-      slack_notifier.ping status_url
+      slack_notifier.ping status_url, unfurl_links: true
     end
   end
 end
