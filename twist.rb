@@ -26,7 +26,7 @@ EM.run do
 
   $stdout.sync = true
   puts "Notifier started, will notify to #{ENV['SLACK_ROOM_NAME']} on #{ENV['SLACK_TEAM']}"
-  slack_notifier.ping "Notifier started"
+  slack_notifier.ping("Notifier started") or die($!)
 
   twitter_client.each do |result|
     result = JSON.parse(result)
