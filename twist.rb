@@ -6,6 +6,21 @@ require 'slack-notifier'
 
 Bundler.require
 
+module DebugClient
+  def self.post uri, opts={}
+    req = Net::HTTP::Post.new(uri)
+    req.form_data = opts
+    req.basic_auth uri.user, uri.password if uri.user
+    
+    h = Net::HTTP.new(uri.hostname, uri.port)
+    h.use_ssl = uri.scheme == 'https'
+    h.set_debug_output($stderr)
+    h.start() {|http|
+      http.request(req)
+    }
+  end
+end
+
 track_keywords = ENV['TWITTER_TRACK_KEYWORDS']
 
 options = {
@@ -22,7 +37,8 @@ options = {
 EM.run do
   twitter_client = EM::Twitter::Client.connect(options)
   slack_notifier = Slack::Notifier.new ENV['SLACK_WEBHOOK_URL'],
-    icon_url: ENV['SLACK_ICON_URL'], channel: ENV['SLACK_ROOM_NAME'], username: ENV['SLACK_SENDER_NAME']
+    icon_url: ENV['SLACK_ICON_URL'], channel: ENV['SLACK_ROOM_NAME'], username: ENV['SLACK_SENDER_NAME'],
+    http_client: DebugClient
 
   $stdout.sync = true
   puts "Notifier started, will notify to #{ENV['SLACK_ROOM_NAME']} on #{ENV['SLACK_TEAM']}"
