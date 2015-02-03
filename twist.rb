@@ -21,7 +21,7 @@ options = {
 
 EM.run do
   twitter_client = EM::Twitter::Client.connect(options)
-  slack_notifier = Slack::Notifier.new ENV['SLACK_TEAM'], ENV['SLACK_TOKEN'],
+  slack_notifier = Slack::Notifier.new ENV['SLACK_WEBHOOK_URL'],
     icon_url: ENV['SLACK_ICON_URL'], channel: ENV['SLACK_ROOM_NAME'], username: ENV['SLACK_SENDER_NAME']
 
   $stdout.sync = true
