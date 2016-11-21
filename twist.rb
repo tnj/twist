@@ -9,7 +9,7 @@ Bundler.require
 track_keywords = ENV['TWITTER_TRACK_KEYWORDS']
 
 options = {
-  path:   '/1/statuses/filter.json',
+  path:   '/1.1/statuses/filter.json',
   params: { track: track_keywords },
   oauth:  {
     consumer_key:    ENV['TWITTER_CONSUMER_KEY'],
@@ -21,17 +21,27 @@ options = {
 
 EM.run do
   twitter_client = EM::Twitter::Client.connect(options)
+  twitter_client.on_unauthorized do
+    puts 'Authorization failed on twitter'
+    slack_notifier.ping 'Authorization failed on twitter' 
+    exit
+  end
+
   slack_notifier = Slack::Notifier.new ENV['SLACK_WEBHOOK_URL'],
-    icon_url: ENV['SLACK_ICON_URL'], channel: ENV['SLACK_ROOM_NAME'], username: ENV['SLACK_SENDER_NAME']
+    icon_url: ENV['SLACK_ICON_URL'],
+    channel: ENV['SLACK_ROOM_NAME'],
+    username: ENV['SLACK_SENDER_NAME']
 
   $stdout.sync = true
   puts "Notifier started, will notify to #{ENV['SLACK_ROOM_NAME']} on #{ENV['SLACK_TEAM']}"
-  slack_notifier.ping("Notifier started") or die($!)
+  slack_notifier.ping "Notifier started"
 
+  last_status_url = []
   twitter_client.each do |result|
     result = JSON.parse(result)
     user = result['user']
     status_url = "https://twitter.com/#{user['screen_name']}/status/#{result['id']}"
+
     if result['retweeted_status']
       if result['in_reply_to_status_id']
         slack_notifier.ping status_url, username: ENV['SLACK_RT_SENDER_NAME'] 
@@ -42,7 +52,13 @@ EM.run do
         slack_notifier.ping text, username: ENV['SLACK_RT_SENDER_NAME'] 
       end
     else
+      next if last_status_url.include?(status_url)
       slack_notifier.ping status_url, unfurl_links: true
+
+      last_status_url << status_url
+      while last_status_url.length > 10 do
+        last_status_url.pop
+      end
     end
   end
 end
