@@ -1,6 +1,6 @@
-# Twist
+# Twist-Slack
 
-Twitter streaming API to HipChat message API.
+Twitter streaming API to Slack
 
 ## Setup for development
 
